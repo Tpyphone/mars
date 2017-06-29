@@ -24,6 +24,8 @@
 #include <stdarg.h>
 #include <stdint.h>
 
+/*中间件，衔接xlogger 和 appender；
+ */
 #ifdef __cplusplus
 extern "C" {
 #endif

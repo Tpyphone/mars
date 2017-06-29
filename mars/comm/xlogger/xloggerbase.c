@@ -8,7 +8,7 @@
 #include <stdio.h>
 
 #include "comm/compiler_util.h"
-
+//WEAK_FUNC weak 弱符号;
 WEAK_FUNC  TLogLevel   __xlogger_Level_impl();
 WEAK_FUNC  void        __xlogger_SetLevel_impl(TLogLevel _level);
 WEAK_FUNC  int         __xlogger_IsEnabledFor_impl(TLogLevel _level);
@@ -127,7 +127,7 @@ void __xlogger_VPrint_impl(const XLoggerInfo* _info, const char* _format, va_lis
         __xlogger_Write_impl(_info, temp);
     }
 }
-
+//__ASSERTV2 gs_appender 来写入日志； DEBUG下会抛出异常
 extern void __ASSERTV2(const char * _pfile, int _line, const char * _pfunc, const char * _pexpression, const char * _format, va_list _list);
 void __xlogger_AssertP_impl(const XLoggerInfo* _info, const char* _expression, const char* _format, va_list _list) {
     __ASSERTV2(_info->filename, _info->line, _info->func_name, _expression, _format, _list);

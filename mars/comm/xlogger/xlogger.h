@@ -28,10 +28,11 @@
 #include <string>
 
 template <bool x> struct XLOGGER_STATIC_ASSERTION_FAILURE;
+//偏特化定义true，未定义false；
 template <> struct XLOGGER_STATIC_ASSERTION_FAILURE<true> { enum { value = 1 }; };
 template<int x> struct xlogger_static_assert_test{};
 
-
+//第一个参数为false，触发断言；
 #define XLOGGER_STATIC_ASSERT( ... ) typedef ::xlogger_static_assert_test<\
 										sizeof(::XLOGGER_STATIC_ASSERTION_FAILURE< ((__VA_ARGS__) == 0 ? false : true) >)>\
 										PP_CAT(boost_static_assert_typedef_, __LINE__)
@@ -110,6 +111,7 @@ private:
 	std::string m_message;
 };
 
+//格式化日志，提供多种格式化方法，安全格式化，懒人格式化；
 class XLogger {
 public:
 	XLogger(TLogLevel _level, const char* _tag, const char* _file, const char* _func, int _line, bool (*_hook)(XLoggerInfo& _info, std::string& _log))
@@ -127,7 +129,7 @@ public:
 
 		m_message.reserve(512);
 	}
-	
+	//析构时通过xlogger_Write／xlogger_Assert写入
 	~XLogger() {
 		if (!m_isassert && m_message.empty()) return;
 
@@ -230,7 +232,7 @@ private:
 	bool m_isinfonull;
 };
 
-
+//模块打日志
 class XScopeTracer {
 public:
 	XScopeTracer(TLogLevel _level, const char* _tag, const char* _name, const char* _file, const char* _func, int _line, const char* _log)
@@ -588,11 +590,17 @@ static const char* __my_xlogger_tag = "prefix_"XLOGGER_TAG"_suffix";
 */
 
 #define xdump xlogger_dump
+
+//目的根据__VA_ARGS__，在op1，op中做选择
+//无参数: 空
+//有参数，参数等于1，选择op1
+//由参数，参数大于1，选择op
 #define XLOGGER_ROUTER_OUTPUT(op1,op,...) PP_IF(PP_NUM_PARAMS(__VA_ARGS__),PP_IF(PP_DEC(PP_NUM_PARAMS(__VA_ARGS__)),op,op1), )
 
-#if !defined(__cplusplus)
+#if !defined(__cplusplus) //非C++环境日志宏定义
 
 #ifdef __GNUC__
+// 目的：像printf函数一样对参数格式化做检查
 __attribute__((__format__ (printf, 2, 3)))
 #endif
 __inline void  __xlogger_c_write(const XLoggerInfo* _info, const char* _log, ...) { xlogger_Write(_info, _log); }
@@ -601,7 +609,7 @@ __inline void  __xlogger_c_write(const XLoggerInfo* _info, const char* _log, ...
 															  else { XLoggerInfo info= {level, tag, file, func, line,\
 																	 {0, 0}, -1, -1, -1};\ gettimeofday(&info.m_tv, NULL);\
 																	 XLOGGER_ROUTER_OUTPUT(__xlogger_c_write(&info, __VA_ARGS__),xlogger_Print(&info, __VA_ARGS__), __VA_ARGS__);}
-
+//exp==YES,才打log
 #define xlogger2_if(exp, level, tag, file, func, line, ...)    if (!(exp) || !xlogger_IsEnabledFor(level));\
 																	else { XLoggerInfo info= {level, tag, file, func, line,\
 																		   {0, 0}, -1, -1, -1}; gettimeofday(&info.timeval, NULL);\
@@ -617,6 +625,7 @@ __inline void  __xlogger_c_write(const XLoggerInfo* _info, const char* _log, ...
 #define xerror2(...)			   __xlogger_c_impl(kLevelError, __VA_ARGS__)
 #define xfatal2(...)			   __xlogger_c_impl(kLevelFatal, __VA_ARGS__)
 
+
 #define xverbose2_if(exp, ...)	   __xlogger_c_impl_if(kLevelVerbose, exp, __VA_ARGS__)
 #define xdebug2_if(exp, ...)	   __xlogger_c_impl_if(kLevelDebug, exp, __VA_ARGS__)
 #define xinfo2_if(exp, ...)		   __xlogger_c_impl_if(kLevelInfo, exp, __VA_ARGS__)
@@ -624,6 +633,7 @@ __inline void  __xlogger_c_write(const XLoggerInfo* _info, const char* _log, ...
 #define xerror2_if(exp, ...)	   __xlogger_c_impl_if(kLevelError, exp, __VA_ARGS__)
 #define xfatal2_if(exp, ...)	   __xlogger_c_impl_if(kLevelFatal, exp, __VA_ARGS__)
 
+//exp==NO,才打log，模拟断言
 #define xassert2(exp, ...)	  if (((exp) || !xlogger_IsEnabledFor(kLevelFatal)));else {\
 									XLoggerInfo info= {kLevelFatal, XLOGGER_TAG, __XFILE__, __XFUNCTION__, __LINE__,\
 									{0, 0}, -1, -1, -1};\
@@ -636,10 +646,11 @@ __inline void  __xlogger_c_write(const XLoggerInfo* _info, const char* _log, ...
 #define XLOGGER_HOOK NULL
 #endif
 
+//WriteNoFormat 输出无格式化日志；例如xlogger("1234")
 #define xlogger(level, tag, file, func, line, ...)	   if ((!xlogger_IsEnabledFor(level)));\
 													   else XLogger(level, tag, file, func, line, XLOGGER_HOOK)\
 															 XLOGGER_ROUTER_OUTPUT(.WriteNoFormat(TSF __VA_ARGS__),(TSF __VA_ARGS__), __VA_ARGS__)
-
+#warning 未使用DoTypeSafeFormat来做安全输出
 #define xlogger2(level, tag, file, func, line, ...)		if ((!xlogger_IsEnabledFor(level)));\
 														else XLogger(level, tag, file, func, line, XLOGGER_HOOK)\
 															 XLOGGER_ROUTER_OUTPUT(.WriteNoFormat(__VA_ARGS__),(__VA_ARGS__), __VA_ARGS__)
@@ -650,6 +661,7 @@ __inline void  __xlogger_c_write(const XLoggerInfo* _info, const char* _log, ...
 
 #define __xlogger_cpp_impl2(level, ...)				 xlogger2(level, XLOGGER_TAG, __XFILE__, __XFUNCTION__, __LINE__, __VA_ARGS__)
 #define __xlogger_cpp_impl_if(level, exp, ...)	   xlogger2_if(exp, level, XLOGGER_TAG, __XFILE__, __XFUNCTION__, __LINE__, __VA_ARGS__)
+
 
 #define xverbose2(...)			   __xlogger_cpp_impl2(kLevelVerbose, __VA_ARGS__)
 #define xdebug2(...)			   __xlogger_cpp_impl2(kLevelDebug, __VA_ARGS__)

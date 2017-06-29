@@ -152,6 +152,7 @@
 
 // for all compiler
 // #elif defined _MSC_VER
+//返回__VA_ARGS__参数的个数，PP_ARG_N 需要通过其他宏组合使用
 #define PP_NARG(...) PP_NARG_ ( __VA_ARGS__, PP_RSEQ_N() )
 #define PP_NARG_(...) PP_ARG_N PP_BRACKET_L() __VA_ARGS__ PP_BRACKET_R()
 #define PP_BRACKET_L() (
@@ -161,7 +162,13 @@
 // #error "no supported!!"
 // #endif
 
+/*返回参数的个数
+*/
 #define PP_NUM_PARAMS(...) PP_IF(PP_DEC(PP_NARG(__VA_ARGS__)), PP_NARG(__VA_ARGS__), PP_NUM_PARAMS_0_1_TEST(__VA_ARGS__))
+
+/*PP_NARG(PP_NUM_PARAMS_0 _1 ()) ,如果_1存在->"PP_NUM_PARAMS_0 _1 (),16..0"等于1， 如果_1不存在->",,16..0"等于2；
+//_1存在1，否则0；
+*/
 #define PP_NUM_PARAMS_0_1_TEST(_1, ...) PP_IF(PP_DEC(PP_NARG(PP_NUM_PARAMS_0 _1 ())), 0, 1)
 #define PP_NUM_PARAMS_0()	,
 
@@ -605,6 +612,17 @@ void test() {
 
     PP_ENUM(3, class);
     // class, class, class
+    
+    PP_NARG(1,2);
+    
+    PP_NUM_PARAMS();
+    PP_NUM_PARAMS(1);
+    PP_NUM_PARAMS(1,2);
+    
+    PP_NUM_PARAMS_0_1_TEST();
+    PP_NUM_PARAMS_0_1_TEST(1);
+    PP_NUM_PARAMS_0_1_TEST(2);
+    
 }
 
 void test2(PP_ENUM_REPEAT(3, DECL3, int a)) {
@@ -626,9 +644,7 @@ void test6(PP_ENUM_BINARY_PARAMS(3, A, a)) {
 template <PP_ENUM_PARAMS(3, typename A)>
 void test7(int x PP_ENUM_TRAILING_BINARY_PARAMS(3, A, a)) {
 }
-
 #endif
-
 #endif /* PREPROCESSOR_H_ */
 
 

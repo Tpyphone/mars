@@ -35,7 +35,7 @@
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #endif
-
+//将_logBody按格式写入prtbuffer
 void log_formater(const XLoggerInfo* _info, const char* _logbody, PtrBuffer& _log) {
     static const char* levelStrings[] = {
         "V",
@@ -45,7 +45,8 @@ void log_formater(const XLoggerInfo* _info, const char* _logbody, PtrBuffer& _lo
         "E",  // error
         "F"  // fatal
     };
-
+    
+    //pos!=length, 表示写入错乱；
     assert((unsigned int)_log.Pos() == _log.Length());
 
     static int error_count = 0;
@@ -54,7 +55,7 @@ void log_formater(const XLoggerInfo* _info, const char* _logbody, PtrBuffer& _lo
     if (_log.MaxLength() <= _log.Length() + 5 * 1024) {  // allowd len(_log) <= 11K(16K - 5K)
         ++error_count;
         error_size = (int)strnlen(_logbody, 1024 * 1024);
-
+        //写入错误信息
         if (_log.MaxLength() >= _log.Length() + 128) {
             int ret = snprintf((char*)_log.PosPtr(), 1024, "[F]log_size <= 5*1024, err(%d, %d)\n", error_count, error_size);  // **CPPLINT SKIP**
             _log.Length(_log.Pos() + ret, _log.Length() + ret);

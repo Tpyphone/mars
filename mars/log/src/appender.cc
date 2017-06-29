@@ -136,6 +136,7 @@ class ScopeErrno {
 
 }
 
+//根据当前时间生成日志的前缀，例如_19900101
 static std::string __make_logfilenameprefix(const timeval& _tv, const char* _prefix) {
     time_t sec = _tv.tv_sec;
     tm tcur = *localtime((const time_t*)&sec);
@@ -288,7 +289,7 @@ static void __del_timeout_file(const std::string& _log_path) {
         }
     }
 }
-
+//将_src_file文件内容写入_dst_file中
 static bool __append_file(const std::string& _src_file, const std::string& _dst_file) {
     if (_src_file == _dst_file) {
         return false;
@@ -349,6 +350,7 @@ static bool __append_file(const std::string& _src_file, const std::string& _dst_
     return true;
 }
 
+//将_src_path中的符合_nameprefix前缀的文件，追加写入dest_path对应的文件中
 static void __move_old_files(const std::string& _src_path, const std::string& _dest_path, const std::string& _nameprefix) {
     if (_src_path == _dest_path) {
         return;
@@ -432,6 +434,7 @@ static bool __writefile(const void* _data, size_t _len, FILE* _file) {
     return true;
 }
 
+//打开log文件，并判断是否使用上一次打开的文件；另外对本地时间的改变做了日志
 static bool __openlogfile(const std::string& _log_dir) {
     if (sg_logdir.empty()) return false;
 
@@ -518,6 +521,7 @@ static void __closelogfile() {
     sg_logfile = NULL;
 }
 
+//写入log，有缓存目录先写入缓存目录，无缓存目录或者写入失败，直接写目标日志文件
 static void __log2file(const void* _data, size_t _len) {
 	if (NULL == _data || 0 == _len || sg_logdir.empty()) {
 		return;
@@ -582,7 +586,7 @@ static void __log2file(const void* _data, size_t _len) {
 
 }
 
-
+//写入tips到文件，通过LogBuffer来压缩并加入头部和尾部
 static void __writetips2file(const char* _tips_format, ...) {
 
     if (NULL == _tips_format) {
@@ -601,6 +605,7 @@ static void __writetips2file(const char* _tips_format, ...) {
     __log2file(tmp_buff.Ptr(), tmp_buff.Length());
 }
 
+//定期循环将内存数据写入文件
 static void __async_log_thread() {
     while (true) {
 
@@ -620,6 +625,7 @@ static void __async_log_thread() {
     }
 }
 
+//同步写入；直接写入文件
 static void __appender_sync(const XLoggerInfo* _info, const char* _log) {
 
     char temp[16 * 1024] = {0};     // tell perry,ray if you want modify size.
@@ -632,6 +638,7 @@ static void __appender_sync(const XLoggerInfo* _info, const char* _log) {
     __log2file(tmp_buff.Ptr(), tmp_buff.Length());
 }
 
+//异步写入，先写入缓存
 static void __appender_async(const XLoggerInfo* _info, const char* _log) {
     ScopedLock lock(sg_mutex_buffer_async);
     if (NULL == sg_log_buff) return;
@@ -700,6 +707,7 @@ void xlogger_appender(const XLoggerInfo* _info, const char* _log) {
 }
 
 #define HEX_STRING  "0123456789abcdef"
+//将二进制转换为"0123456789abcdef" 返回个数
 static unsigned int to_string(const void* signature, int len, char* str) {
     char* str_p = str;
     const unsigned char* sig_p;
@@ -725,6 +733,7 @@ static unsigned int to_string(const void* signature, int len, char* str) {
     return (unsigned int)(str_p - str);
 }
 
+//往当前线程的内存中读取数据写入文件；
 const char* xlogger_dump(const void* _dumpbuffer, size_t _len) {
     if (NULL == _dumpbuffer || 0 == _len) {
         //        ASSERT(NULL!=_dumpbuffer);
@@ -816,7 +825,7 @@ void appender_open(TAppenderMode _mode, const char* _dir, const char* _nameprefi
     tickcountdiff_t del_timeout_file_time = tickcount_t().gettickcount() - tick;
     
     tick.gettickcount();
-
+    //将mmap的内存赋值给sg_log_buff
     char mmap_file_path[512] = {0};
     snprintf(mmap_file_path, sizeof(mmap_file_path), "%s/%s.mmap2", sg_cache_logdir.empty()?_dir:sg_cache_logdir.c_str(), _nameprefix);
 
